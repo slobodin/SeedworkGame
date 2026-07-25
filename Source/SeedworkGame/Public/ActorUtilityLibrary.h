@@ -23,11 +23,11 @@ public:
     UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "ActorClass"))
     static AActor* FindUniqueActorWithTag(const UObject* worldContextObject, TSubclassOf<AActor> ActorClass, FName tag);
 
-    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "Interface"))
+    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
     static AActor* FindUniqueActorWithInterface(const UObject* worldContextObject, TSubclassOf<UInterface> Interface);
 
-    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
-    static void DestroyActorOnNextTick(const UObject* worldContextObject, AActor* theActor);
+    UFUNCTION(BlueprintCallable)
+    static void DestroyActorOnNextTick(AActor* theActor);
 
     UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
     static void DestroyAllActorsOfClass(const UObject* worldContextObject, TSubclassOf<AActor> actorClass);

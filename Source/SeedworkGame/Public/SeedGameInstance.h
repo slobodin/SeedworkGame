@@ -15,7 +15,7 @@ public:
     virtual void Init() override;
     virtual void Shutdown() override;
 
-    // Returns a timer manager that does not get paused when game is on pause.
+    // Returns a timer manager that does not get paused when game is on pause (ignores time dilation too).
     FTimerManager& GetTimerManagerEx() const { return *TimerManagerEx; }
 
     static USeedGameInstance* Get(const UObject* worldContextObject);
