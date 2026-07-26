@@ -67,6 +67,8 @@ void USeedGameInstance::Init()
     TWeakObjectPtr<USeedGameInstance> weakThis = this;
     PreviousEnsureHandler = SetEnsureHandler([weakThis](const FEnsureHandlerArgs& args) { return EnsureHandler(weakThis.Get(), args); });
 #endif
+
+    FSlateApplication::Get().ToggleGlobalInvalidation(true);
 }
 
 void USeedGameInstance::Shutdown()
