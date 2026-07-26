@@ -24,5 +24,7 @@ private:
     // Timer manager that does not get paused when game is paused
     TSharedPtr<FTimerManager> TimerManagerEx;
 
+    TFunction<bool(const FEnsureHandlerArgs& Args)> PreviousEnsureHandler = nullptr;
+
     FTSTicker::FDelegateHandle CoreTickerHandle;
 };

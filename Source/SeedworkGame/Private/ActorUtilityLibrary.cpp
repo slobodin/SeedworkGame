@@ -8,9 +8,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
-AActor* UActorUtilityLibrary::FindUniqueActor(const UObject* worldContextObject, TSubclassOf<AActor> ActorClass)
+AActor* UActorUtilityLibrary::FindUniqueActor(const UObject* worldContextObject, TSubclassOf<AActor> actorClass)
 {
-    if (!ActorClass)
+    if (!actorClass)
     {
         return nullptr;
     }
@@ -22,40 +22,53 @@ AActor* UActorUtilityLibrary::FindUniqueActor(const UObject* worldContextObject,
             return nullptr;
         }
 
-        TArray<AActor*> outActors;
-        UGameplayStatics::GetAllActorsOfClass(world, ActorClass, outActors);
+        AActor* foundActor = nullptr;
+        int32 count = 0;
 
-        if (ensureAlwaysMsgf(outActors.Num() == 1, TEXT("FindUniqueActor: passed actor class is not unique or actor does not exists!")))
+        for (TActorIterator<AActor> it(world, actorClass); it; ++it)
         {
-            if (!outActors[0]->IsPendingKillPending())
+            if (count == 0)
             {
-                return outActors[0];
+                foundActor = *it;
             }
+            count++;
+
+            // Early out if we found more than one
+            if (count > 1)
+            {
+                break;
+            }
+        }
+
+        if (ensureMsgf(count == 1, TEXT("FindUniqueActor: passed actor class is not unique or actor does not exists!")))
+        {
+            return foundActor;
         }
     }
 
     return nullptr;
 }
 
-AActor* UActorUtilityLibrary::FindUniqueActorWithTag(const UObject* worldContextObject, TSubclassOf<AActor> ActorClass, FName tag)
+AActor* UActorUtilityLibrary::FindUniqueActorWithTag(const UObject* worldContextObject, TSubclassOf<AActor> actorClass, FName tag)
 {
     unimplemented();
     return nullptr;
 }
 
-AActor* UActorUtilityLibrary::FindUniqueActorWithInterface(const UObject* worldContextObject, TSubclassOf<UInterface> Interface)
+AActor* UActorUtilityLibrary::FindUniqueActorWithInterface(const UObject* worldContextObject, TSubclassOf<UInterface> interface)
 {
     unimplemented();
     return nullptr;
 }
 
-void UActorUtilityLibrary::DestroyActorOnNextTick(const UObject* worldContextObject, AActor* theActor)
+void UActorUtilityLibrary::DestroyActorOnNextTick(AActor* theActor)
 {
-    if (auto world = GEngine->GetWorldFromContextObject(worldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+    if (ensure(IsValid(theActor)))
     {
         TWeakObjectPtr<AActor> weakActor = theActor;
 
-        world->GetTimerManager().SetTimerForNextTick([weakActor]() {
+        theActor->GetWorld()->GetTimerManager().SetTimerForNextTick([weakActor]()
+        {
             if (weakActor.IsValid())
             {
                 weakActor->Destroy();
@@ -66,20 +79,19 @@ void UActorUtilityLibrary::DestroyActorOnNextTick(const UObject* worldContextObj
 
 void UActorUtilityLibrary::DestroyAllActorsOfClass(const UObject* worldContextObject, TSubclassOf<AActor> actorClass)
 {
-    if (actorClass)
+    if (auto world = GEngine->GetWorldFromContextObject(worldContextObject, EGetWorldErrorMode::LogAndReturnNull))
     {
-        if (auto world = GEngine->GetWorldFromContextObject(worldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+        if (!world->IsGameWorld())
         {
-            if (world->IsGameWorld())
-            {
-                for (TActorIterator<AActor> it(world, actorClass); it; ++it)
-                {
-                    if (IsValid(*it))
-                    {
-                        (*it)->Destroy();
-                    }
-                }
-            }
+            return;
+        }
+
+        TArray<AActor*> actorsToDestroy;
+        UGameplayStatics::GetAllActorsOfClass(worldContextObject, actorClass, actorsToDestroy);
+
+        for (AActor* actor : actorsToDestroy)
+        {
+            actor->Destroy();
         }
     }
 }

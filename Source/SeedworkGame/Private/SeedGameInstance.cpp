@@ -6,7 +6,6 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetInternationalizationLibrary.h"
-#include "SeedGameUserSettings.h"
 #include "TimerManager.h"
 
 namespace
@@ -14,20 +13,29 @@ namespace
 #if !UE_BUILD_SHIPPING
     ANSICHAR StackTraceData[1 << 17] = { 0 };
 
-    bool EnsureHandler(const TWeakObjectPtr<UObject> worldCtx, const FEnsureHandlerArgs& args)
+    bool EnsureHandler(const UObject* worldCtx, const FEnsureHandlerArgs& args)
     {
-        if (worldCtx.IsValid())
+        static bool bInHandler = false;
+
+        if (bInHandler)
         {
-            const SIZE_T size = UE_ARRAY_COUNT(StackTraceData);
-
-            memset(StackTraceData, 0, sizeof(StackTraceData));
-
-            FPlatformStackWalk::StackWalkAndDumpEx(StackTraceData, size, PLATFORM_RETURN_ADDRESS(),
-                FGenericPlatformStackWalk::EStackWalkFlags::FlagsUsedWhenHandlingEnsure);
-
-            UKismetSystemLibrary::PrintString(worldCtx.Get(), "*** ENSURE FAILED: " + FString(args.Expression) + " " + FString(args.Message) + " *** \n Stack: \n" + FString::ConstructFromPtrSize(StackTraceData, size) + "\n", true, true, FColor::Red, 10.0f);
+            return false;
         }
 
+        bInHandler = true;
+
+        const SIZE_T size = UE_ARRAY_COUNT(StackTraceData);
+
+        FMemory::Memzero(StackTraceData, size);
+
+        FPlatformStackWalk::StackWalkAndDumpEx(StackTraceData, size, PLATFORM_RETURN_ADDRESS(),
+            FGenericPlatformStackWalk::EStackWalkFlags::FlagsUsedWhenHandlingEnsure);
+
+        UKismetSystemLibrary::PrintString(worldCtx,
+            "*** ENSURE FAILED: " + FString(args.Expression) + " " + FString(args.Message) +
+            " *** \n Stack: \n" + FString(StackTraceData) + "\n", true, true, FColor::Red, 10.0f);
+
+        bInHandler = false;
         return false;
     }
 #endif
@@ -44,7 +52,7 @@ void USeedGameInstance::Init()
     FAssetRegistryModule::GetRegistry().SearchAllAssets(true);
 #endif
 
-    TimerManagerEx = MakeShareable(new FTimerManager());
+    TimerManagerEx = MakeShared<FTimerManager>(this);
 
     Super::Init();
 
@@ -57,14 +65,18 @@ void USeedGameInstance::Init()
 
 #if !UE_BUILD_SHIPPING
     TWeakObjectPtr<USeedGameInstance> weakThis = this;
-
-    SetEnsureHandler([weakThis](const FEnsureHandlerArgs& args) { return EnsureHandler(weakThis.Get(), args); });
+    PreviousEnsureHandler = SetEnsureHandler([weakThis](const FEnsureHandlerArgs& args) { return EnsureHandler(weakThis.Get(), args); });
 #endif
 }
 
 void USeedGameInstance::Shutdown()
 {
     FTSTicker::GetCoreTicker().RemoveTicker(CoreTickerHandle);
+    TimerManagerEx.Reset();
+
+#if !UE_BUILD_SHIPPING
+    SetEnsureHandler(PreviousEnsureHandler);
+#endif
 
     Super::Shutdown();
 }
