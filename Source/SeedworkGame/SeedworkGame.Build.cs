@@ -17,6 +17,8 @@ public class SeedworkGame : ModuleRules
         [
             "CoreUObject",
             "Engine",
+            "SlateCore",
+            "Slate",
         ]);
     }
 }
