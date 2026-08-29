@@ -16,5 +16,7 @@ void ASeedGameMode::GenericPlayerInitialization(AController* newPlayer)
 {
     Super::GenericPlayerInitialization(newPlayer);
 
+    ReceiveGenericPlayerInitialization(newPlayer);
+
     OnGameModePlayerInitialized.Broadcast(this, newPlayer);
 }

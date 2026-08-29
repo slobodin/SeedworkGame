@@ -25,4 +25,7 @@ protected:
     virtual bool AllowCheats(APlayerController* pc) override;
 
     virtual void GenericPlayerInitialization(AController* newPlayer) override;
+
+    UFUNCTION(BlueprintImplementableEvent)
+    void ReceiveGenericPlayerInitialization(AController* newPlayer);
 };
